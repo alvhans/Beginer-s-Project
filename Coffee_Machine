@@ -1,0 +1,93 @@
+# MY_FIRST_PROJECT
+class CoffeeMachine:
+    item = ["water", "milk", "coffee beans",
+            "disposable cups", "money"]
+    item_amount = [400, 540, 120, 9, 550]
+
+    def __init__(self):
+        self.user_choice = ()
+        self.start()
+
+    def start(self):
+        while True:
+            user_wants = input("Write action (buy, fill, take, remaining, exit):\n> ")
+            print()
+            if user_wants == "buy":
+                self.user_choice = input("What do you want to buy? "
+                                         "1 - espresso, 2 - latte, 3 - cappuccino, "
+                                         "back - to main menu:\n> ")
+                if self.user_choice == "back":
+                    continue
+                else:
+                    self.user_buy()
+            elif user_wants == "fill":
+                self.worker_fill()
+            elif user_wants == "take":
+                self.income()
+            elif user_wants == "remaining":
+                self.remain()
+            else:
+                break
+
+    def remain(self):
+        print("The coffee machine has:")
+        for count, amount in enumerate(CoffeeMachine.item_amount):
+            print(amount, "of", CoffeeMachine.item[count])
+        print()
+
+    def user_buy(self):
+        global item_amount
+        espresso_req = [250, 0, 16, 1, -4]
+        latte_req = [350, 75, 20, 1, -7]
+        cappuccino_req = [200, 100, 12, 1, -6]
+
+        def process(x):
+            insufficient = 0
+            counter = []
+            for index, req in enumerate(x):
+                if CoffeeMachine.item_amount[index] < req:
+                    counter.append(index)
+                    insufficient += 1
+            if insufficient > 0:
+                for index2 in counter:
+                    print(f"Sorry, not enough {CoffeeMachine.item[index2]}!")
+            else:
+                for index3, req3 in enumerate(x):
+                    CoffeeMachine.item_amount[index3] -= req3
+                    if index3 == len(espresso_req) - 1:
+                        print("I have enough resources, making you a coffee!")
+
+        if self.user_choice == "1":
+            process(espresso_req)
+        elif self.user_choice == "2":
+            process(latte_req)
+        elif self.user_choice == "3":
+            process(cappuccino_req)
+        else:
+            self.start()
+        print()
+
+    def worker_fill(self):
+        global item_amount
+
+        for post in range(0, 4):
+            if post == 2:
+                CoffeeMachine.item_amount[post] += int(input(f"Write how many grams of "
+                                                             f"{CoffeeMachine.item[post]} do you want to add:\n> "))
+            elif post == 3:
+                CoffeeMachine.item_amount[post] += int(input("Write how many disposable cups "
+                                                             "of coffee do you want to add:\n> "))
+            else:
+                CoffeeMachine.item_amount[post] += int(input(f"Write how many ml of "
+                                                             f"{CoffeeMachine.item[post]} do you want to add:\n> "))
+        print()
+
+    def income(self):
+        global item_amount
+
+        print("I gave you $", CoffeeMachine.item_amount[4])
+        CoffeeMachine.item_amount[4] -= CoffeeMachine.item_amount[4]
+        print()
+
+
+CoffeeMachine()
