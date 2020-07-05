@@ -1,0 +1,175 @@
+import random
+import sqlite3
+ 
+ 
+class BankingSystem:
+    __x = None
+ 
+    def __init__(self, x):
+        self.x = x
+ 
+        self.conn = sqlite3.connect('card.s3db')
+        self.cur = self.conn.cursor()
+ 
+        while True:
+            if self.x == "Begin":
+ 
+                self.cur.execute('SELECT number, pin, balance FROM card')
+                datas = self.cur.fetchall()
+                print(datas)
+                self.conn.commit()
+ 
+                self.lobby = int(input("""1. Create an account
+2. Log into account
+0. Exit
+>"""))
+                print()
+                if self.lobby == 1:
+                    self.create()
+                    continue
+                elif self.lobby == 2:
+                    self.log_in()
+                    if BankingSystem.__x != "out":
+                        continue
+                print("Bye!")
+                break
+ 
+    def create(self):
+        def luhn(digit):
+            integer = []
+            for string in list(digit):
+                number = int(string)
+                integer.append(number)
+            for index, num in enumerate(integer):
+                if index % 2 == 0:
+                    integer[index] *= 2
+                if integer[index] > 9:
+                    integer[index] -= 9
+ 
+            total = sum(integer)
+            counter = 0
+            while total % 10 != 0:
+                total += 1
+                counter += 1
+            return counter
+ 
+        int_unique = random.randint(100000000, 999999999)
+        unique = "400000" + str(int_unique)
+        user_id = unique + str(luhn(unique))
+        pin = str(random.randint(1000, 9999))
+ 
+        self.cur.execute(f'''INSERT INTO card VALUES (
+        {int_unique}, {user_id}, {pin}, 0)''')
+ 
+        self.conn.commit()
+ 
+        print(
+            f"""Your card has been created
+Your card number:
+{user_id}
+Your card PIN:
+{pin}"""
+        )
+        print()
+ 
+    def log_in(self):
+        self.cur.execute('SELECT number, pin FROM card')
+        valid = dict(self.cur.fetchall())
+        self.conn.commit()
+ 
+        user_id = input("Enter your card number:\n>")
+        pin = input("Enter your PIN:\n>")
+ 
+        def ui():
+            def luhn(digit):
+                integer = []
+                for string in list(digit):
+                    number = int(string)
+                    integer.append(number)
+                for index, num in enumerate(integer):
+                    if index % 2 == 0:
+                        integer[index] *= 2
+                    if integer[index] > 9:
+                        integer[index] -= 9
+ 
+                total = sum(integer)
+                counter = 0
+                while total % 10 != 0:
+                    total += 1
+                    counter += 1
+                return str(counter)
+ 
+            menu = 0
+            while menu == 0:
+                menu += int(input("""\n1. Balance
+2. Add income
+3. Do transfer
+4. Close account
+5. Log Out
+0. Exit
+>"""))
+                if menu == 1:
+                    self.cur.execute('SELECT number, balance FROM card')
+                    bal = dict(self.cur.fetchall())
+ 
+                    print(f"\nBalance: {bal[user_id]}")
+                    menu -= 1
+                elif menu == 2:
+                    deposit = int(input("\nEnter income:\n> "))
+                    self.cur.execute(f'UPDATE card SET '
+                                     f'balance=balance+{deposit} '
+                                     f'WHERE number={user_id}')
+                    print("Income was added!")
+                    menu -= 2
+                elif menu == 3:
+                    self.cur.execute('SELECT number, balance FROM card')
+                    bal = dict(self.cur.fetchall())
+                    self.cur.execute('SELECT number, pin FROM card')
+                    valid = dict(self.cur.fetchall())
+ 
+                    receiver = input("\nTransfer\nEnter card number:\n> ")
+                    if receiver != user_id:
+                        if (luhn((receiver[::-1].replace(receiver[::-1][0], "", 1))[::-1]) == list(receiver)[-1]
+                                and receiver in valid):
+                            trf = int(input("Enter how much money you want to transfer:\n> "))
+                            if trf <= bal[user_id]:
+                                self.cur.execute(f'UPDATE card SET balance=balance-{trf} '
+                                                 f'WHERE number={user_id}')
+                                self.cur.execute(f'UPDATE card SET balance=balance+{trf} '
+                                                 f'WHERE number={receiver}')
+                                print("Success!")
+                            else:
+                                print("Not enough money!")
+                        elif luhn((receiver[::-1].replace(receiver[::-1][0], "", 1))[::-1]) != list(receiver)[-1]:
+                            print(luhn((receiver[::-1].replace(receiver[::-1][0], "", 1))[::-1]))
+                            print("Probably you made mistake in the card number. "
+                                  "Please try again!")
+                        else:
+                            print("Such a card does not exist.")
+                    else:
+                        print("You can't transfer money to the same account!")
+                    menu -= 3
+                elif menu == 4:
+                    self.cur.execute(f'DELETE FROM card WHERE number={user_id}')
+                    print("\nThe account has been closed!")
+                    menu-= 4
+                    break
+                elif menu == 5:
+                    print(f"\nYou have successfully logged out!")
+                    menu -= 5
+                    break
+                else:
+                    BankingSystem.__x = "out"
+                    break
+                self.conn.commit()
+ 
+        if user_id in valid and valid[user_id] == pin:
+            print("\nYou have successfully logged in!")
+            ui()
+            print()
+        else:
+            print("Wrong card number or PIN!")
+            print()
+ 
+ 
+BankingSystem("Begin")
